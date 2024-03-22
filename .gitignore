@@ -7,6 +7,8 @@ graph_YAGO
 thirdparties
 thirdparty
 
+results/*
+
 .ipynb_checkpoints/*
 __pycache__
 
