@@ -1,4 +1,9 @@
-graph_*
+graph_ICEWS14s
+graph_ICEWS05-15
+graph_GDELT
+graph_WIKI
+graph_YAGO
+
 thirdparties
 thirdparty
 

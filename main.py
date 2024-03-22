@@ -189,18 +189,18 @@ if __name__ == "__main__":
     )
 
     if args["record"]:
-        log_file_path = Path(
-            args.save_path + os.sep + f'results/g_{args["gpu"]}_' + log_file
+        log_dir = Path(
+            args["save_path"] + os.sep + "/results/"
         )
 
-        if not os.path.exists(log_file_path):
-            os.makedirs(log_file_path)
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
         else:
             log_file_path = str(
-                increment_path(log_file_path, exist_ok=args.exist_ok, mkdir=True)
+                increment_path(log_dir, exist_ok=args["exist_ok"], mkdir=True)
             )
 
-    set_logger(log_file_path)
+    set_logger(log_dir, f'g_{args["gpu"]}_' + log_file)
     
     data = load_data(args["dataset"])
 

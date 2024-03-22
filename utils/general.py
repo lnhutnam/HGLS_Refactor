@@ -3,17 +3,18 @@ import logging, logging.config
 from pathlib import Path
 
 
-def set_logger(log_file):
+def set_logger(log_dir, log_filename):
     """Write logs to checkpoint and console
 
     Args:
         log_file (str): filename string/ log filename.
     """
+    name = str(log_dir) + os.sep + log_filename + ".txt"
     logging.basicConfig(
         format="%(asctime)s %(levelname)-8s %(message)s",
         level=logging.INFO,
         datefmt="%Y-%m-%d %H:%M:%S",
-        filename=log_file,
+        filename=name,
         filemode="w",
     )
     console = logging.StreamHandler()
@@ -25,8 +26,8 @@ def set_logger(log_file):
 
 def increment_path(path, exist_ok=False, sep="", mkdir=False):
     """Function for increment path
-    
-    Adapted from Yolov7, 
+
+    Adapted from Yolov7,
     Ref: https://github.com/WongKinYiu/yolov7
 
     Args:
