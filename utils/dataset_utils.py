@@ -7,15 +7,15 @@ import utils.datasets as knwlgrh
 from utils.graph_utils import add_object, add_subject
 
 
-def load_all_answers(total_data, num_rel):
-    """store subjects for all (rel, object) queries and objects for all (subject, rel) queries
+def load_all_answers(total_data: np.ndarray, num_rel: int):
+    """Construct a dictionary that contains subjects for all (rel, object) queries and objects for all (subject, rel) queries
 
     Args:
-        total_data (torch.Tensor): _description_
-        num_rel (): _description_
+        total_data (np.ndarray): input triples data.
+        num_rel (int): number of relation in dataset.
 
     Returns:
-        _type_: _description_
+        default dict: return default dict `all_objects`, and `all_subjects`
     """
     all_subjects, all_objects = {}, {}
     for line in total_data:
@@ -25,19 +25,20 @@ def load_all_answers(total_data, num_rel):
     return all_objects, all_subjects
 
 
-def load_all_answers_for_filter(total_data, num_rel, rel_p=False):
-    """_summary_
-
+def load_all_answers_for_filter(
+    total_data: np.ndarray, num_rel: int, rel_p: bool = False
+):
+    """
+    Construct a dictionary that contains subjects for all (rel, object) queries, and objects for all (subject, rel) queries.
     Args:
-        total_data (_type_): _description_
-        num_rel (_type_): _description_
+        total_data (np.ndarray): input triples data.
+        num_rel (int): number of relation in dataset.
         rel_p (bool, optional): _description_. Defaults to False.
 
     Returns:
-        _type_: _description_
+        default dict: all answers (rel, object) queries and objects for all (subject, rel) queries
     """
-    # store subjects for all (rel, object) queries and
-    # objects for all (subject, rel) queries
+
     def add_relation(e1, e2, r, d):
         if not e1 in d:
             d[e1] = {}
@@ -57,13 +58,15 @@ def load_all_answers_for_filter(total_data, num_rel, rel_p=False):
     return all_ans
 
 
-def load_all_answers_for_time_filter(total_data, num_rels, num_nodes, rel_p=False):
+def load_all_answers_for_time_filter(
+    total_data: np.ndarray, num_rels: int, num_nodes: int, rel_p: bool = False
+):
     """_summary_
 
     Args:
-        total_data (_type_): _description_
-        num_rels (_type_): _description_
-        num_nodes (_type_): _description_
+        total_data (np.ndarray): input data
+        num_rels (int): _description_
+        num_nodes (int): _description_
         rel_p (bool, optional): _description_. Defaults to False.
 
     Returns:
@@ -75,34 +78,23 @@ def load_all_answers_for_time_filter(total_data, num_rels, num_nodes, rel_p=Fals
         all_ans_t = load_all_answers_for_filter(snap, num_rels, rel_p)
         all_ans_list.append(all_ans_t)
 
-    # output_label_list = []
-    # for all_ans in all_ans_list:
-    #     output = []
-    #     ans = []
-    #     for e1 in all_ans.keys():
-    #         for r in all_ans[e1].keys():
-    #             output.append([e1, r])
-    #             ans.append(list(all_ans[e1][r]))
-    #     output = torch.from_numpy(np.array(output))
-    #     output_label_list.append((output, ans))
-    # return output_label_list
     return all_ans_list
 
 
-def split_by_time(data):
+def split_by_time(data: np.ndarray):
     """_summary_
 
     Args:
-        data (_type_): _description_
+        data (np.ndarray): _description_
 
     Returns:
-        _type_: _description_
+        list: list of graph snapshots
     """
     snapshot_list = []
     snapshot = []
     snapshots_num = 0
     latest_t = 0
-    
+
     for i in range(len(data)):
         t = data[i][3]
         train = data[i]
@@ -115,7 +107,7 @@ def split_by_time(data):
                 snapshots_num += 1
             snapshot = []
         snapshot.append(train[:3])
-        
+
     # Add the last snapshot
     if len(snapshot) > 0:
         snapshot_list.append(np.array(snapshot).copy())
@@ -124,7 +116,7 @@ def split_by_time(data):
     union_num = [1]
     nodes = []
     rels = []
-    
+
     for snapshot in snapshot_list:
         uniq_v, edges = np.unique(
             (snapshot[:, 0], snapshot[:, 2]), return_inverse=True
@@ -144,42 +136,23 @@ def split_by_time(data):
             min(union_num),
         )
     )
+
     return snapshot_list
 
-def slide_list(snapshots, k=1):
-    """_summary_
+
+def load_data(dataset: str, bfs_level: int = 3, relabel: bool = False):
+    """Function for loading data
 
     Args:
-        snapshots (torch.Tensor): all snapshot
-        k (int, optional): padding K history for sequence stat. Defaults to 1.
-
-    Yields:
-        _type_: _description_
-    """
-    k = k  # k=1 needs to take the history of length k, and add a label of length 1
-    if k > len(snapshots):
-        print(
-            "ERROR: history length exceed the length of snapshot: {}>{}".format(
-                k, len(snapshots)
-            )
-        )
-    for _ in tqdm(range(len(snapshots) - k + 1)):
-        yield snapshots[_ : _ + k]
-
-
-def load_data(dataset, bfs_level=3, relabel=False):
-    """_summary_
-
-    Args:
-        dataset (_type_): _description_
-        bfs_level (int, optional): _description_. Defaults to 3.
-        relabel (bool, optional): _description_. Defaults to False.
+        dataset (str): input name of need loading dataset.
+        bfs_level (int, optional): level for bfs graph traversal. Defaults to 3.
+        relabel (bool, optional): is needed to be relabel dataset when you use general graph such as `aifb`, `mutag`, `bgs`, and `am`. Defaults to False.
 
     Raises:
-        ValueError: _description_
+        ValueError: unknown dataset.
 
     Returns:
-        _type_: _description_
+        RGCNLinkDataset: _description_
     """
     if dataset in ["aifb", "mutag", "bgs", "am"]:
         return knwlgrh.load_entity(dataset, bfs_level, relabel)
@@ -198,67 +171,3 @@ def load_data(dataset, bfs_level=3, relabel=False):
         return knwlgrh.load_from_local("./data", dataset)
     else:
         raise ValueError("Unknown dataset: {}".format(dataset))
-
-
-def construct_snap(test_triples, num_nodes, num_rels, final_score, topK):
-    """_summary_
-
-    Args:
-        test_triples (_type_): _description_
-        num_nodes (_type_): _description_
-        num_rels (_type_): _description_
-        final_score (_type_): _description_
-        topK (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    # sorted_score, indices = torch.sort(final_score, dim=1, descending=True)
-    _, indices = torch.sort(final_score, dim=1, descending=True)
-    top_indices = indices[:, :topK]
-    predict_triples = []
-    for _ in range(len(test_triples)):
-        for index in top_indices[_]:
-            h, r = test_triples[_][0], test_triples[_][1]
-            if r < num_rels:
-                predict_triples.append([test_triples[_][0], r, index])
-            else:
-                predict_triples.append([index, r - num_rels, test_triples[_][0]])
-
-    # Convert to numpy array
-    predict_triples = np.array(predict_triples, dtype=int)
-    return predict_triples
-
-
-def construct_snap_r(test_triples, num_nodes, num_rels, final_score, topK):
-    """Constructing knowledge graph snapshot 
-
-    Args:
-        test_triples (_type_): _description_
-        num_nodes (_type_): _description_
-        num_rels (_type_): _description_
-        final_score (_type_): _description_
-        topK (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    # sorted_score, indices = torch.sort(final_score, dim=1, descending=True)
-    _, indices = torch.sort(final_score, dim=1, descending=True)
-    top_indices = indices[:, :topK]
-    predict_triples = []
-    
-    for _ in range(len(test_triples)):
-        for index in top_indices[_]:
-            h, t = test_triples[_][0], test_triples[_][2]
-            if index < num_rels:
-                predict_triples.append([h, index, t])
-                # predict_triples.append([t, index+num_rels, h])
-            else:
-                predict_triples.append([t, index - num_rels, h])
-                # predict_triples.append([t, index-num_rels, h])
-
-    # Convert to numpy array
-    predict_triples = np.array(predict_triples, dtype=int)
-    return predict_triples
-
