@@ -1,4 +1,5 @@
 from collections import defaultdict
+from typing import Union, Tuple
 
 import torch
 from torch.utils.data import Dataset
@@ -8,32 +9,35 @@ import dgl
 from dgl.sampling import sample_neighbors
 
 
-def r2e(triplets, num_rels):
-    """_summary_
+def r2e(
+    triplets: Union[np.ndarray, torch.Tensor], num_rels: int
+) -> Tuple[np.ndarray, list, list]:
+    """Function for generating triplet related to each relation.
 
     Args:
-        triplets (_type_): _description_
-        num_rels (_type_): _description_
+        triples (Union[np.ndarray, torch.Tensor]): fact triple (src id, rel id, dst id)
+        num_rels (int): number of relations
 
     Returns:
-        _type_: _description_
+        uniq_r, r_len, e_idx (List[np.ndarray, list, list]): array of unique relations, length of relation array, entity indexes.
     """
     src, rel, dst = triplets.transpose()
-    
     # get all relations
     uniq_r = np.unique(rel)
     uniq_r = np.concatenate((uniq_r, uniq_r + num_rels))
-    
+
     # generate r2e
     r_to_e = defaultdict(set)
     for j, (src, rel, dst) in enumerate(triplets):
         r_to_e[rel].add(src)
+        r_to_e[rel].add(dst)
         r_to_e[rel + num_rels].add(src)
-        
+        r_to_e[rel + num_rels].add(dst)
+
     r_len = []
     e_idx = []
     idx = 0
-    
+
     for r in uniq_r:
         r_len.append((idx, idx + len(r_to_e[r])))
         e_idx.extend(list(r_to_e[r]))
@@ -42,7 +46,7 @@ def r2e(triplets, num_rels):
 
 
 
-def build_sub_graph(num_nodes: int, num_rels: int, triples, device: torch.device):
+def build_sub_graph(num_nodes: int, num_rels: int, triples, device: torch.device) -> dgl.DGLGraph:
     """Build subgraph function
 
     Args:
@@ -80,14 +84,19 @@ def build_sub_graph(num_nodes: int, num_rels: int, triples, device: torch.device
     return g
 
 
-def append_object(e1, e2, r, d):
-    """_summary_
+def append_object(
+    e1: Union[np.int64, int],
+    e2: Union[np.int64, int],
+    r: Union[np.int64, int],
+    d: dict,
+):
+    """Function for appending object.
 
     Args:
-        e1 (_type_): _description_
-        e2 (_type_): _description_
-        r (_type_): _description_
-        d (_type_): _description_
+        e1 (Union[np.int64, int]): id of head entity.
+        e2 (Union[np.int64, int]): id of tail entity.
+        r (Union[np.int64, int]): id of relation that connect head and tail entity.
+        d (dict): triplet dicttionary.
     """
     if not e1 in d:
         d[e1] = {}
@@ -96,15 +105,21 @@ def append_object(e1, e2, r, d):
     d[e1][r].add(e2)
 
 
-def add_subject(e1, e2, r, d, num_rel):
-    """Adding subject for triples
+def add_subject(
+    e1: Union[np.int64, int],
+    e2: Union[np.int64, int],
+    r: Union[np.int64, int],
+    d: dict,
+    num_rel: Union[np.int64, int],
+):
+    """Function for adding subject.
 
     Args:
-        e1 (_type_):
-        e2 (_type_):
-        r (_type_):
-        d (_type_):
-        num_rel (_type_):
+        e1 (Union[np.int64, int]): id of head entity.
+        e2 (Union[np.int64, int]): id of tail entity.
+        r (Union[np.int64, int]): id of relation that connect head and tail entity.
+        d (dict): triplet dicttionary.
+        num_rel (Union[np.int64, int]): number of relation.
     """
     if not e2 in d:
         d[e2] = {}
@@ -113,22 +128,27 @@ def add_subject(e1, e2, r, d, num_rel):
     d[e2][r + num_rel].add(e1)
 
 
-def add_object(e1, e2, r, d, num_rel):
-    """_summary_
+def add_object(
+    e1: Union[np.int64, int],
+    e2: Union[np.int64, int],
+    r: Union[np.int64, int],
+    d: dict,
+    num_rel: Union[np.int64, int],
+):
+    """Function for adding object.
 
     Args:
-        e1 (_type_): _description_
-        e2 (_type_): _description_
-        r (_type_): _description_
-        d (_type_): _description_
-        num_rel (_type_): _description_
+        e1 (Union[np.int64, int]): id of head entity.
+        e2 (Union[np.int64, int]): id of tail entity.
+        r (Union[np.int64, int]): id of relation that connect head and tail entity.
+        d (dict): triplet dicttionary.
+        num_rel (Union[np.int64, int]): number of relation.
     """
     if not e1 in d:
         d[e1] = {}
     if not r in d[e1]:
         d[e1][r] = set()
     d[e1][r].add(e2)
-
 
 def loader(total_data, max_batch, start_id, no_batch=False, mode="train"):
     """_summary_
@@ -166,7 +186,7 @@ def loader(total_data, max_batch, start_id, no_batch=False, mode="train"):
 
 class GraphDatasetOnline(Dataset):
     def __init__(
-        self, total_data, max_batch=100, start_id=0, no_batch=False, mode="train"
+        self, total_data:torch.Tensor, max_batch:int=100, start_id:int=0, no_batch:bool=False, mode:str="train"
     ):
         self.data = loader(total_data, max_batch, start_id, no_batch, mode)
         self.size = len(self.data[0])
@@ -326,7 +346,7 @@ class GraphDatasetOffline(Dataset):
 def collateOffline(
     data,
 ):
-    """_summary_
+    """Function for 
 
     Args:
         data (_type_): _description_
